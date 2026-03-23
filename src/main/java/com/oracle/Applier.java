@@ -80,11 +80,11 @@ public class Applier extends Thread {
             }
             updEndTime = System.currentTimeMillis();
             // deletes
+            delStartTime = System.currentTimeMillis();
             for (int i = start; i < end; i++) {
                 delete.setInt(1,i);
                 delete.execute();
             }
-            delStartTime = System.currentTimeMillis();
             delEndTime = System.currentTimeMillis();
             endTime = System.currentTimeMillis();
             connection.close();
