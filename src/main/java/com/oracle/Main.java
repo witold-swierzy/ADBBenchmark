@@ -24,7 +24,7 @@ public class Main {
         long startTime=0,endTime=0;
         Applier[] appliers = new Applier[threadPoolSize];
         try {
-            System.out.println("Initializing");
+            System.out.println("ADB Benchmark initialization");
             OracleDataSource ods = new OracleDataSource();
             ods.setURL("jdbc:oracle:thin:@" + dbName + "?TNS_ADMIN=" + tnsAdmin);
             ods.setUser(username);
@@ -44,7 +44,7 @@ public class Main {
             for (int i = 0; i < appliers.length; i++)
                 appliers[i] = new Applier(i,tableName,tnsAdmin,dbName,username,password,numOfOperations);
 
-            System.out.println("Benchmark Test initialized successfully.");
+            System.out.println("ADB Benchmark initialized successfully.");
             System.out.println("Starting Threads");
             startTime = System.currentTimeMillis();
             for (int i = 0; i < appliers.length; i++)
@@ -54,16 +54,17 @@ public class Main {
                 appliers[i].join();
 
             endTime = System.currentTimeMillis();
-            System.out.println("Test completed.");
-            System.out.println("Table Name                              : "+tableName);
-            System.out.println("Number of threads                       : "+threadPoolSize);
-            System.out.println("Number of INSERT/UPDATE/DELETE ops sets : "+numOfOperations);
-            System.out.println("Total execution time (ms)               : "+(endTime-startTime));
-            System.out.println("Execution times of threads (ms)         : ");
+            System.out.println("ADB Test completed.");
+            System.out.println("Table Name                      : "+tableName);
+            System.out.println("Number of threads               : "+threadPoolSize);
+            System.out.println("Number of CRUD ops sets         : "+numOfOperations);
+            System.out.println("Total execution time (ms)       : "+(endTime-startTime));
+            System.out.println("Execution times of threads (ms) : ");
             for (int i=0; i<threadPoolSize;i++)
                 System.out.println("Thread #"+i+", total : "+appliers[i].getExecutionTime() +
                         " ,Insert : "+appliers[i].getInsertTime() +
                         " ,Update : "+appliers[i].getUpdateTime() +
+                        " ,Select : "+appliers[i].getSelectTime() +
                         " ,Delete : "+appliers[i].getDeleteTime() );
         }
         catch (Exception e) {e.printStackTrace();}

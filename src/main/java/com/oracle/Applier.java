@@ -24,9 +24,11 @@ public class Applier extends Thread {
     private long insEndTime   = 0;
     private long updStartTime = 0;
     private long updEndTime   = 0;
+    private long selStartTime = 0;
+    private long selEndTime   = 0;
     private long delStartTime = 0;
     private long delEndTime   = 0;
-    private PreparedStatement insert,update,delete;
+    private PreparedStatement insert,update,select,delete;
 
     public Applier (int threadId,
                     String tableName,
@@ -52,6 +54,7 @@ public class Applier extends Thread {
             connection.setAutoCommit(true);
             insert = connection.prepareStatement("INSERT INTO "+this.tableName+" values (?,?)");
             update = connection.prepareStatement("UPDATE "+this.tableName+" SET SK=? WHERE PK=?");
+            select = connection.prepareStatement("SELECT * FROM "+this.tableName+" WHERE PK=?");
             delete = connection.prepareStatement("DELETE FROM "+this.tableName+" WHERE PK=?");
         }
         catch (Exception e) {e.printStackTrace();};
@@ -79,6 +82,13 @@ public class Applier extends Thread {
                 update.execute();
             }
             updEndTime = System.currentTimeMillis();
+            // reads
+            selStartTime = System.currentTimeMillis();
+            for (int i= start; i < end; i++) {
+                select.setInt(1,i);
+                select.execute();
+            }
+            selEndTime = System.currentTimeMillis();
             // deletes
             delStartTime = System.currentTimeMillis();
             for (int i = start; i < end; i++) {
@@ -102,6 +112,10 @@ public class Applier extends Thread {
 
     public long getUpdateTime() {
         return this.updEndTime - this.updStartTime;
+    }
+
+    public long getSelectTime() {
+        return this.selEndTime - this.selStartTime;
     }
 
     public long getDeleteTime() {
