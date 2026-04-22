@@ -3,6 +3,8 @@ package com.oracle;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
+import oracle.jdbc.OracleConnection;
+import oracle.jdbc.OraclePreparedStatement;
 import oracle.jdbc.pool.OracleDataSource;
 
 public class Applier extends Thread {
@@ -28,6 +30,7 @@ public class Applier extends Thread {
     private long selEndTime   = 0;
     private long delStartTime = 0;
     private long delEndTime   = 0;
+    private boolean execInserts,execUpdates,execSelects,execDeletes;
     private PreparedStatement insert,update,select,delete;
 
     public Applier (int threadId,
@@ -36,7 +39,11 @@ public class Applier extends Thread {
                     String dbName,
                     String username,
                     String password,
-                    int numOfOperations) {
+                    int numOfOperations,
+                    boolean execInserts,
+                    boolean execUpdates,
+                    boolean execSelects,
+                    boolean execDeletes) {
         this.threadId        = threadId;
         this.tableName       = tableName;
         this.tnsAdmin        = tnsAdmin;
@@ -44,6 +51,10 @@ public class Applier extends Thread {
         this.username        = username;
         this.password        = password;
         this.numOfOperations = numOfOperations;
+        this.execInserts     = execInserts;
+        this.execUpdates     = execUpdates;
+        this.execSelects     = execSelects;
+        this.execDeletes     = execDeletes;
 
         try {
             ods = new OracleDataSource();
@@ -51,7 +62,7 @@ public class Applier extends Thread {
             ods.setUser(username);
             ods.setPassword(password);
             connection = ods.getConnection();
-            connection.setAutoCommit(true);
+            connection.setAutoCommit(false);
             insert = connection.prepareStatement("INSERT INTO "+this.tableName+" values (?,?)");
             update = connection.prepareStatement("UPDATE "+this.tableName+" SET SK=? WHERE PK=?");
             select = connection.prepareStatement("SELECT * FROM "+this.tableName+" WHERE PK=?");
@@ -61,41 +72,62 @@ public class Applier extends Thread {
     }
 
     public void run () {
-        int start = numOfOperations*threadId + 1;
-        int end   = numOfOperations*threadId + numOfOperations + 1;
+        int start = numOfOperations*threadId;
+        int end   = numOfOperations*threadId + numOfOperations;
         try {
             // inserts
             startTime = System.currentTimeMillis();
-            insStartTime = System.currentTimeMillis();
-            for (int i = start; i < end; i++) {
-                insert.setInt(1, i);
-                insert.setString(2, "OldValue");
-                insert.execute();
+            if (this.execInserts) {
+                connection.setAutoCommit(false);
+                insStartTime = System.currentTimeMillis();
+                for (int i = start; i < end; i++) {
+                    insert.setInt(1, i);
+                    insert.setString(2, "OldValue");
+                    insert.execute();
+                    //insert.addBatch();
+                    //insert.clearParameters();
+                }
+
+                //insert.executeBatch();
+                connection.commit();
+                insEndTime = System.currentTimeMillis();
+            }
+            // updates
+            if (this.execUpdates) {
+                updStartTime = System.currentTimeMillis();
+                for (int i = start; i < end; i++) {
+                    update.setString(1, "NewValue");
+                    update.setInt(2, i);
+                    update.execute();
+                    //update.addBatch();
+                    //update.clearParameters();
+                }
+                //update.executeBatch();
+                connection.commit();
+                updEndTime = System.currentTimeMillis();
+            }
+            if (this.execSelects) {
+                selStartTime = System.currentTimeMillis();
+                for (int i = start; i < end; i++) {
+                    select.setInt(1, i);
+                    select.execute();
+                }
+                selEndTime = System.currentTimeMillis();
             }
 
-            insEndTime = System.currentTimeMillis();
-            // updates
-            updStartTime = System.currentTimeMillis();
-            for (int i = start; i < end; i++) {
-                update.setString(1,"NewValue");
-                update.setInt(2,i);
-                update.execute();
-            }
-            updEndTime = System.currentTimeMillis();
-            // reads
-            selStartTime = System.currentTimeMillis();
-            for (int i= start; i < end; i++) {
-                select.setInt(1,i);
-                select.execute();
-            }
-            selEndTime = System.currentTimeMillis();
             // deletes
-            delStartTime = System.currentTimeMillis();
-            for (int i = start; i < end; i++) {
-                delete.setInt(1,i);
-                delete.execute();
+            if (this.execDeletes) {
+                delStartTime = System.currentTimeMillis();
+                for (int i = start; i < end; i++) {
+                    delete.setInt(1, i);
+                    delete.execute();
+                    //delete.addBatch();
+                    //delete.clearParameters();
+                }
+                //delete.executeBatch();
+                connection.commit();
+                delEndTime = System.currentTimeMillis();
             }
-            delEndTime = System.currentTimeMillis();
             endTime = System.currentTimeMillis();
             connection.close();
         }

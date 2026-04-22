@@ -19,6 +19,10 @@ public class Main {
     static int threadPoolSize  = Integer.parseInt(System.getenv("BENCH_THREADS"));
     static int numOfOperations = Integer.parseInt(System.getenv("BENCH_OPS"));
     static int numOfTables     = 0;
+    static boolean execInserts = Boolean.valueOf(System.getenv("BENCH_INSERTS"));
+    static boolean execUpdates = Boolean.valueOf(System.getenv("BENCH_UPDATES"));
+    static boolean execSelects = Boolean.valueOf(System.getenv("BENCH_SELECTS"));
+    static boolean execDeletes = Boolean.valueOf(System.getenv("BENCH_DELETES"));
 
     public static void main() {
         long startTime=0,endTime=0;
@@ -42,7 +46,7 @@ public class Main {
             con.close();
 
             for (int i = 0; i < appliers.length; i++)
-                appliers[i] = new Applier(i,tableName,tnsAdmin,dbName,username,password,numOfOperations);
+                appliers[i] = new Applier(i,tableName,tnsAdmin,dbName,username,password,numOfOperations,execInserts,execUpdates,execSelects,execDeletes);
 
             System.out.println("ADB Benchmark initialized successfully.");
             System.out.println("Starting Threads");
